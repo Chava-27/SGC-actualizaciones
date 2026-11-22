@@ -1,0 +1,74 @@
+# Convierte en Release lo que el repositorio de SGC deja en la rama "entrega".
+# El repositorio de SGC compila el instalador, firma el manifiesto y empuja a "entrega"
+# (con una deploy key que solo puede escribir aquí). Este flujo crea la Release con el
+# GITHUB_TOKEN de este repositorio y después borra la rama: el historial no crece.
+name: Publicar versión
+
+on:
+  push:
+    branches: [entrega]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bajar la entrega
+        uses: actions/checkout@v4
+        with:
+          ref: entrega
+
+      - name: Leer la solicitud
+        id: datos
+        run: |
+          set -euo pipefail
+          etiqueta=$(jq -r '.etiqueta' publicar.json)
+          titulo=$(jq -r '.titulo' publicar.json)
+          prueba=$(jq -r '.prueba' publicar.json)
+          instalador=$(jq -r '.instalador' publicar.json)
+          # Solo nombres esperados: nada de rutas ni caracteres raros
+          [[ "$etiqueta" =~ ^(v[0-9]+(\.[0-9]+)*|prueba)$ ]] || { echo "Etiqueta no válida: $etiqueta"; exit 1; }
+          [[ "$instalador" =~ ^SGC_v[0-9]+(\.[0-9]+)*_instalacion\.exe$ ]] || { echo "Instalador no válido: $instalador"; exit 1; }
+          [[ "$prueba" == "true" || "$prueba" == "false" ]] || { echo "Campo prueba no válido"; exit 1; }
+          if [[ "$prueba" == "false" && "$etiqueta" == "prueba" ]]; then echo "Una versión real no puede usar la etiqueta prueba"; exit 1; fi
+          test -f "$instalador" && test -f manifiesto.json && test -f notas.md
+          {
+            echo "etiqueta=$etiqueta"
+            echo "titulo=$titulo"
+            echo "prueba=$prueba"
+            echo "instalador=$instalador"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Crear la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ETIQUETA: ${{ steps.datos.outputs.etiqueta }}
+          TITULO: ${{ steps.datos.outputs.titulo }}
+          PRUEBA: ${{ steps.datos.outputs.prueba }}
+          INSTALADOR: ${{ steps.datos.outputs.instalador }}
+        run: |
+          set -euo pipefail
+          git config user.name "Chava27"
+          git config user.email "83664743+Chava-27@users.noreply.github.com"
+          if [[ "$PRUEBA" == "true" ]]; then
+            gh release delete "$ETIQUETA" --cleanup-tag --yes || true
+            gh release create "$ETIQUETA" "$INSTALADOR" manifiesto.json \
+              --title "$TITULO" --notes-file notas.md --prerelease --latest=false --target main
+          else
+            if gh release view "$ETIQUETA" >/dev/null 2>&1; then
+              echo "La versión $ETIQUETA ya está publicada; no se reemplaza."
+              exit 1
+            fi
+            gh release create "$ETIQUETA" "$INSTALADOR" manifiesto.json \
+              --title "$TITULO" --notes-file notas.md --latest --target main
+          fi
+
+      - name: Borrar la rama de entrega
+        if: always()
+        run: git push origin --delete entrega || true
