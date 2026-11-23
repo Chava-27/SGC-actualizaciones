@@ -26,9 +26,9 @@
 **No.** Si ya usa SGC, el programa se actualiza desde aquí sin que usted entre a esta página:
 
 1. Al abrir SGC, revisa si hay una versión nueva. No frena el arranque y no pasa nada si no hay internet.
-2. Si la hay, avisa en la **campana** 🔔 con lo que trae de nuevo.
+2. Si la hay, avisa al Propietario y a los Administradores en la **campana** 🔔, con lo que trae de nuevo.
 3. El **Propietario** o un **Administrador** pulsa **Actualizar ahora** (también en *Sistema → Buscar actualizaciones*).
-4. SGC descarga la versión, comprueba que sea auténtica, se cierra, se instala y vuelve a abrir solo.
+4. SGC descarga la versión, comprueba que sea auténtica, se cierra, se instala y vuelve a abrir solo. Windows pide permiso de administrador.
 
 > **Sus datos no se tocan.** Todo vive en la base de datos de SQL Server. Antes de cualquier cambio en la base, SGC saca un respaldo.
 
@@ -100,8 +100,8 @@ Depende del plan de la licencia:
 | Plan | Actualizaciones |
 |---|---|
 | **Permanente** | Todas, siempre |
-| **Perpetua** | Las publicadas durante su año de actualizaciones |
-| **Mensual, Trimestral, Semestral y Anual** | Todas, mientras la licencia esté vigente |
+| **Perpetua** | Las publicadas hasta la fecha de actualizaciones de su licencia (normalmente un año) |
+| **Mensual, Trimestral, Semestral y Anual** | Todas, mientras la licencia esté vigente (no en días de gracia ni vencida) |
 | **Prueba** | Todas, durante los 30 días |
 
 ---
